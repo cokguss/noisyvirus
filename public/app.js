@@ -830,6 +830,23 @@ const legalModalContent = document.getElementById('legalModalContent');
 const legalDocs = new Map();
 
 let legalCloseT = null;
+// locking scroll removes the scrollbar and would reflow the whole page
+// (cards "jump" for a moment) — compensate its width with padding instead
+function lockScrollForModal() {
+  const root = document.documentElement;
+  const scrollbarW = window.innerWidth - root.clientWidth;
+  if (scrollbarW > 0) root.style.paddingRight = scrollbarW + 'px';
+  root.classList.add('locked', 'legal-open');
+  document.body.classList.add('locked');
+}
+
+function unlockScrollAfterModal() {
+  const root = document.documentElement;
+  root.style.paddingRight = '';
+  root.classList.remove('locked', 'legal-open');
+  document.body.classList.remove('locked');
+}
+
 function hideLegalModal() {
   if (!legalModal || legalModal.hidden || legalModal.classList.contains('closing')) return;
   legalModal.classList.add('closing');
@@ -837,8 +854,7 @@ function hideLegalModal() {
     legalModal.classList.remove('closing');
     legalModal.hidden = true;
     legalModalContent.replaceChildren();
-    document.documentElement.classList.remove('locked', 'legal-open');
-    document.body.classList.remove('locked');
+    unlockScrollAfterModal();
   }, 300);
 }
 
@@ -850,8 +866,7 @@ async function openLegalDoc(path) {
   clearTimeout(legalCloseT);
   legalModal.classList.remove('closing');
   legalModal.hidden = false;
-  document.documentElement.classList.add('locked', 'legal-open');
-  document.body.classList.add('locked');
+  lockScrollForModal();
   try {
     let docEl = legalDocs.get(path);
     if (!docEl) {
