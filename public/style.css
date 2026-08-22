@@ -1500,6 +1500,23 @@ html.legal-open .sound-toggle {
   from { opacity: 0; transform: translateY(22px); }
 }
 
+/* smooth exit: backdrop fades, card sinks away */
+.legal-modal.closing .legal-modal-backdrop {
+  animation: legal-fade-out 0.28s var(--ease) forwards;
+}
+
+.legal-modal.closing .legal-modal-panel {
+  animation: legal-sink 0.3s var(--ease) forwards;
+}
+
+@keyframes legal-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes legal-sink {
+  to { opacity: 0; transform: translateY(24px) scale(0.985); }
+}
+
 .legal-modal-panel .legal-main {
   margin-top: 0;
 }

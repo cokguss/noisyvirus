@@ -829,12 +829,17 @@ const legalModal = document.getElementById('legalModal');
 const legalModalContent = document.getElementById('legalModalContent');
 const legalDocs = new Map();
 
+let legalCloseT = null;
 function hideLegalModal() {
-  if (!legalModal) return;
-  legalModal.hidden = true;
-  legalModalContent.replaceChildren();
-  document.documentElement.classList.remove('locked', 'legal-open');
-  document.body.classList.remove('locked');
+  if (!legalModal || legalModal.hidden || legalModal.classList.contains('closing')) return;
+  legalModal.classList.add('closing');
+  legalCloseT = setTimeout(() => {
+    legalModal.classList.remove('closing');
+    legalModal.hidden = true;
+    legalModalContent.replaceChildren();
+    document.documentElement.classList.remove('locked', 'legal-open');
+    document.body.classList.remove('locked');
+  }, 300);
 }
 
 async function openLegalDoc(path) {
@@ -842,6 +847,8 @@ async function openLegalDoc(path) {
     location.href = path;
     return;
   }
+  clearTimeout(legalCloseT);
+  legalModal.classList.remove('closing');
   legalModal.hidden = false;
   document.documentElement.classList.add('locked', 'legal-open');
   document.body.classList.add('locked');
