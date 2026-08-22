@@ -823,3 +823,69 @@ fileScanBtn.addEventListener('click', async () => {
 });
 
 applyLang(currentLang);
+
+// ---- legal pages open in-page (modal) so the YouTube player keeps playing ----
+const legalModal = document.getElementById('legalModal');
+const legalModalContent = document.getElementById('legalModalContent');
+const legalDocs = new Map();
+
+function hideLegalModal() {
+  if (!legalModal) return;
+  legalModal.hidden = true;
+  legalModalContent.replaceChildren();
+  document.documentElement.classList.remove('locked');
+  document.body.classList.remove('locked');
+}
+
+async function openLegalDoc(path) {
+  if (!legalModal || !legalModalContent) {
+    location.href = path;
+    return;
+  }
+  legalModal.hidden = false;
+  document.documentElement.classList.add('locked');
+  document.body.classList.add('locked');
+  try {
+    let docEl = legalDocs.get(path);
+    if (!docEl) {
+      const res = await fetch(path);
+      const page = new DOMParser().parseFromString(await res.text(), 'text/html');
+      docEl = page.querySelector('.legal-main');
+      if (!docEl) throw new Error('document not found');
+      legalDocs.set(path, docEl);
+    }
+    legalModalContent.replaceChildren(docEl.cloneNode(true));
+    legalModal.querySelector('.legal-modal-scroll').scrollTop = 0;
+    try { history.pushState({ nvLegal: path }, '', path); } catch {}
+  } catch {
+    hideLegalModal();
+    location.href = path;
+  }
+}
+
+if (legalModal) {
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href$="/privacy.html"], a[href$="/terms.html"]');
+    if (!a || a.target === '_blank') return;
+    e.preventDefault();
+    openLegalDoc(a.getAttribute('href'));
+  });
+
+  document.getElementById('legalModalClose').addEventListener('click', () => {
+    if (history.state && history.state.nvLegal) history.back();
+    else hideLegalModal();
+  });
+  document.getElementById('legalModalBackdrop').addEventListener('click', () => {
+    if (history.state && history.state.nvLegal) history.back();
+    else hideLegalModal();
+  });
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !legalModal.hidden) {
+      if (history.state && history.state.nvLegal) history.back();
+      else hideLegalModal();
+    }
+  });
+  addEventListener('popstate', () => {
+    if (!legalModal.hidden) hideLegalModal();
+  });
+}

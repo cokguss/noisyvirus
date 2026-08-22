@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=42">
+  <link rel="stylesheet" href="style.css?v=43">
 </head>
 <body>
 
@@ -328,12 +328,24 @@
       <a href="/privacy.html" data-i18n="legal.privacy">Privacy Policy</a>
       <a href="/terms.html" data-i18n="legal.terms">Terms of Service</a>
     </nav>
-    <p class="footer-note">© 2026 NOISY VIRUS · v42</p>
+    <p class="footer-note">© 2026 NOISY VIRUS</p>
   </footer>
 
   <div class="scene-tooltip" id="sceneTooltip" aria-hidden="true"></div>
 
-  <script src="app.js?v=28" defer></script>
+  <div class="legal-modal" id="legalModal" hidden>
+    <div class="legal-modal-backdrop" id="legalModalBackdrop"></div>
+    <div class="legal-modal-scroll">
+      <div class="legal-modal-panel">
+        <button class="legal-modal-close" id="legalModalClose" type="button" aria-label="Tutup">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+        <div id="legalModalContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=29" defer></script>
   <script type="module" src="scene.js?v=8"></script>
 </body>
 </html>
