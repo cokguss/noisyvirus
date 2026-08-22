@@ -833,7 +833,7 @@ function hideLegalModal() {
   if (!legalModal) return;
   legalModal.hidden = true;
   legalModalContent.replaceChildren();
-  document.documentElement.classList.remove('locked');
+  document.documentElement.classList.remove('locked', 'legal-open');
   document.body.classList.remove('locked');
 }
 
@@ -843,7 +843,7 @@ async function openLegalDoc(path) {
     return;
   }
   legalModal.hidden = false;
-  document.documentElement.classList.add('locked');
+  document.documentElement.classList.add('locked', 'legal-open');
   document.body.classList.add('locked');
   try {
     let docEl = legalDocs.get(path);

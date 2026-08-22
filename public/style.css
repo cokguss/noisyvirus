@@ -1457,23 +1457,13 @@ html.entrance-forced .hero-line > span {
   padding-bottom: clamp(2rem, 8vh, 5rem);
 }
 
-/* sticky bar holds the close button pinned to the card's top-right corner;
-   button center rides exactly on the card's top edge (half-overlap) */
-.legal-modal-bar {
-  position: sticky;
-  top: 0.85rem;
-  z-index: 3;
-  display: flex;
-  justify-content: flex-end;
-  max-width: 760px;
-  margin-inline: auto;
-  margin-bottom: -20px;
-  padding-right: 0.35rem;
-  pointer-events: none;
-}
-
+/* the close button lives inside the card's top-right corner and scrolls
+   away with the document — it is part of the box, not a floating control */
 .legal-modal-close {
-  pointer-events: auto;
+  position: absolute;
+  top: 1.4rem;
+  right: 2rem;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1488,6 +1478,10 @@ html.entrance-forced .hero-line > span {
   cursor: pointer;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
   transition: border-color 0.25s var(--ease), background 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+html.legal-open .sound-toggle {
+  display: none !important;
 }
 
 .legal-modal-close:hover {
