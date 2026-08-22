@@ -32,6 +32,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* always reserve the scrollbar gutter so locking scroll (modal) never
+     changes the viewport width — fixed elements like the navbar stay put */
+  scrollbar-gutter: stable;
 }
 
 body {

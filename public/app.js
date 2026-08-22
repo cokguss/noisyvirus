@@ -834,8 +834,12 @@ let legalCloseT = null;
 // (cards "jump" for a moment) — compensate its width with padding instead
 function lockScrollForModal() {
   const root = document.documentElement;
-  const scrollbarW = window.innerWidth - root.clientWidth;
-  if (scrollbarW > 0) root.style.paddingRight = scrollbarW + 'px';
+  // with scrollbar-gutter: stable the viewport width never changes on its own;
+  // older engines without it get the padding compensation as a fallback
+  if (!CSS.supports('scrollbar-gutter', 'stable')) {
+    const scrollbarW = window.innerWidth - root.clientWidth;
+    if (scrollbarW > 0) root.style.paddingRight = scrollbarW + 'px';
+  }
   root.classList.add('locked', 'legal-open');
   document.body.classList.add('locked');
 }
