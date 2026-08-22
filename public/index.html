@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Noisy Virus — Scan files &amp; URLs</title>
+  <meta name="description" content="Check any file, hash, or link against dozens of antivirus engines in seconds. Powered by VirusTotal.">
+  <meta name="theme-color" content="#0a0a0e">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230b0d16'/%3E%3Cpath d='M18 44 L26 20 L32 34 L38 24 L46 44' stroke='%237b96ff' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='14' r='4' fill='%23ff8c52'/%3E%3C/svg%3E">
+  <script>document.documentElement.classList.add('js')</script>
+  <script>
+    // fps sampler: writes half-second frame counts to data-fps for diagnostics,
+    // and switches to simplified animations early when frames are scarce
+    (function () {
+      var log = [], frames = 0, t0 = performance.now();
+      function tick(t) {
+        frames++;
+        var dt = t - t0;
+        if (dt >= 500) {
+          log.push(Math.round(frames * 1000 / dt));
+          frames = 0; t0 = t;
+          document.documentElement.setAttribute('data-fps', log.join(','));
+          if (log.length === 2 && (log[0] + log[1]) / 2 < 20) {
+            document.documentElement.classList.add('low-fps');
+          }
+        }
+        if (log.length < 20) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    })();
+  </script>
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=42">
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+  <div class="bg" aria-hidden="true">
+    <div class="bg-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="orb orb-4"></div>
+    </div>
+    <svg class="bg-grain" xmlns="http://www.w3.org/2000/svg">
+      <filter id="grain">
+        <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="2" stitchTiles="stitch"/>
+        <feColorMatrix type="saturate" values="0"/>
+      </filter>
+      <rect width="100%" height="100%" filter="url(#grain)"/>
+    </svg>
+    <div class="bg-vignette"></div>
+  </div>
+
+  <div class="intro" id="intro">
+      <div class="intro-stage intro-stage--dev" id="introDevStage">
+      <p class="intro-kicker">DUKUNGAN KOMUNITAS</p>
+      <h2 class="intro-dev-title">
+        <span class="intro-dev-title-line"><span>Dibuat oleh dua kreator,</span></span>
+        <span class="intro-dev-title-line"><span class="accent">didukung oleh Anda.</span></span>
+      </h2>
+      <p class="intro-dev-sub">Dukung mereka agar Noisy Virus terus gratis &amp; bertenaga.</p>
+      <div class="intro-devs-luxe">
+        <a class="intro-dev-card" href="https://github.com/cokguss" target="_blank" rel="noopener noreferrer" aria-label="Dukung Noisy di GitHub">
+          <span class="intro-dev-card-spot" aria-hidden="true"></span>
+          <span class="intro-dev-avatar-wrap">
+            <span class="intro-dev-ring" aria-hidden="true"></span>
+            <img src="/dev-avatar.png?v=1" alt="Noisy" width="84" height="84" loading="eager">
+          </span>
+          <span class="intro-dev-info">
+            <span class="intro-dev-role">Creator of Noisy Virus</span>
+            <strong class="intro-dev-name">Noisy</strong>
+            <span class="intro-dev-cta">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.6.5.5 5.6.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 015.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0023.5 12C23.5 5.6 18.4.5 12 .5z"/></svg>
+              Dukung di GitHub
+            </span>
+          </span>
+        </a>
+        <span class="intro-dev-plus" aria-hidden="true">×</span>
+        <a class="intro-dev-card" href="https://t.me/bloodskil2" target="_blank" rel="noopener noreferrer" aria-label="Dukung BloodSKill di Telegram">
+          <span class="intro-dev-card-spot" aria-hidden="true"></span>
+          <span class="intro-dev-avatar-wrap">
+            <span class="intro-dev-ring ring-warm" aria-hidden="true"></span>
+            <img src="/bloodskill.png?v=1" alt="BloodSKill" width="84" height="84" loading="eager">
+          </span>
+          <span class="intro-dev-info">
+            <span class="intro-dev-role">Developer of XtremeUbot</span>
+            <strong class="intro-dev-name">BloodSKill</strong>
+            <span class="intro-dev-cta">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.6c.3-1.3-.9-1.9-2.1-1.4L2.7 10.4c-1.3.5-1.2 2 .1 2.4l4.4 1.4 1.7 5.3c.4 1.1 1.1 1.3 1.9.6l2.5-2.3 4.5 3.3c.8.6 1.9.2 2.1-.9l2-15.6zM8.4 13.5l9.3-5.9c.4-.3.8.3.5.6l-7.6 7-.3 3-1.9-4.7z"/></svg>
+              Support via Telegram
+            </span>
+          </span>
+        </a>
+      </div>
+        <button class="btn btn-primary intro-continue" id="toMainStageBtn" type="button">Lanjutkan &rarr;</button>
+      </div>
+
+    <div class="intro-stage intro-stage--main" id="introMainStage" hidden>
+      <div class="intro-inner">
+        <p class="intro-kicker" data-i18n="intro.kicker">NOISY VIRUS HADIRKAN</p>
+        <p class="intro-title" role="heading" aria-level="1">
+          <span class="intro-line"><span data-i18n="intro.l1">Scan loud.</span></span>
+          <span class="intro-line"><span data-i18n="intro.l2">Stay clean.</span></span>
+        </p>
+        <button class="btn btn-ghost btn-lg intro-enter" id="enterBtn" type="button" data-i18n="intro.enter">Enter the lab</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="false" aria-label="Sound on">
+    <span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="sound-label" data-i18n="sound.on">Sound on</span>
+  </button>
+
+  <header class="site-nav" data-nav>
+    <a class="nav-brand" href="#top" aria-label="Noisy Virus home">
+      <svg class="logo-mark" width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#5a71e8"/>
+            <stop offset="1" stop-color="#93aaff"/>
+          </linearGradient>
+        </defs>
+        <rect x="2" y="2" width="60" height="60" rx="16" fill="#0b0d16" stroke="rgba(123,150,255,.45)" stroke-width="2"/>
+        <rect x="14" y="17" width="7" height="30" rx="3.5" fill="url(#lg)"/>
+        <rect x="43" y="17" width="7" height="30" rx="3.5" fill="url(#lg)"/>
+        <path d="M21 40 L27 22 L33 33 L38 25 L43 38" stroke="url(#lg)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="51" cy="13" r="4" fill="#ff8c52"/>
+      </svg>
+      <span class="brand-text">NOISY<em>VIRUS</em></span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#scanner" data-i18n="nav.scanner">Scanner</a>
+      <a href="#how" data-i18n="nav.how">How it works</a>
+    </nav>
+    <div class="nav-tools">
+      <button class="lang-toggle" id="langToggle" type="button" aria-label="Switch language">ID</button>
+      <span class="engine-badge" id="engineBadge">CHECKING…</span>
+      <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="mobile-menu" id="mobileMenu" aria-label="Mobile">
+    <a href="#scanner" data-i18n="nav.scanner">Scanner</a>
+    <a href="#how" data-i18n="nav.how">How it works</a>
+    <a href="#dev" data-i18n="nav.dev">Developer</a>
+  </nav>
+
+  <main id="main">
+
+    <section class="hero hero-cinema" id="top">
+      <div class="hero-inner">
+        <p class="hero-kicker"><span class="pulse-dot"></span><span data-i18n="hero.kicker">70+ engines · Powered by NoisyVirus</span></p>
+        <h1 class="hero-title">
+          <span class="hero-line"><span data-i18n="hero.t1">Scan loud.</span></span>
+          <span class="hero-line"><span class="accent" data-i18n="hero.t2">Stay clean.</span></span>
+        </h1>
+        <p class="hero-sub" data-i18n="hero.sub">Check any file, hash, or link against the industry's antivirus fleet — before it gets anywhere near your machine.</p>
+      </div>
+    </section>
+
+    <section class="scanner-section" id="scanner">
+      <div class="scan-card">
+          <div class="tabs" role="tablist" aria-label="Scan mode">
+            <div class="tab-indicator" aria-hidden="true"></div>
+            <button class="tab is-active" role="tab" aria-selected="true" data-tab="url" type="button">URL</button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="file" type="button">File</button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="hash" type="button">Hash</button>
+          </div>
+
+          <form class="scan-panel is-active" id="urlForm" data-panel="url" novalidate>
+            <input type="text" id="urlInput" placeholder="https://example.com" autocomplete="off" spellcheck="false" aria-label="URL to scan">
+            <button class="btn btn-primary" type="submit">Scan</button>
+          </form>
+
+          <div class="scan-panel" id="filePanel" data-panel="file">
+            <label class="dropzone" id="dropzone" for="fileInput">
+              <input type="file" id="fileInput" hidden>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/>
+              </svg>
+              <span class="dz-title" data-i18n="dz.drop">Drop a file here or browse</span>
+              <span class="dz-hint" id="fileHint">Max 32 MB · scanned privately via VirusTotal</span>
+            </label>
+            <button class="btn btn-primary btn-block" id="fileScanBtn" type="button" data-i18n="action.scanfile" disabled>Scan file</button>
+          </div>
+
+          <form class="scan-panel" id="hashForm" data-panel="hash" novalidate>
+            <input type="text" id="hashInput" placeholder="MD5, SHA-1 or SHA-256…" data-i18n-ph="ph.hash" autocomplete="off" spellcheck="false" aria-label="File hash to scan">
+            <button class="btn btn-primary" type="submit">Scan</button>
+          </form>
+
+          <p class="scan-status" id="scanStatus" hidden>
+            <span class="status-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="status-text" id="statusText">Contacting VirusTotal…</span>
+          </p>
+          <p class="scan-error" id="scanError" role="alert" hidden></p>
+        </div>
+    </section>
+
+    <section class="results" id="results" hidden>
+      <div class="results-head" data-reveal>
+        <svg class="verdict-ring" id="verdictRing" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Detection ratio">
+          <circle class="ring-track" cx="60" cy="60" r="52" fill="none" stroke-width="9"/>
+          <circle class="ring-value" id="ringValue" cx="60" cy="60" r="52" fill="none" stroke-width="9"
+                  stroke-linecap="round" transform="rotate(-90 60 60)"/>
+          <text class="ring-label" id="ringLabel" x="60" y="57" text-anchor="middle">—</text>
+          <text class="ring-sub" x="60" y="76" text-anchor="middle" data-i18n="results.detections">detections</text>
+        </svg>
+        <div class="results-meta">
+          <p class="verdict-chip" id="verdictChip">—</p>
+          <h2 class="target-name" id="targetName">—</h2>
+          <p class="target-sub" id="targetSub"></p>
+        </div>
+      </div>
+
+      <div class="stat-grid" data-reveal>
+        <div class="stat stat-red"><strong id="statMal">0</strong><span data-i18n="stat.malicious">Malicious</span></div>
+        <div class="stat stat-amber"><strong id="statSus">0</strong><span data-i18n="stat.suspicious">Suspicious</span></div>
+        <div class="stat stat-green"><strong id="statHar">0</strong><span data-i18n="stat.harmless">Harmless</span></div>
+        <div class="stat stat-dim"><strong id="statUnd">0</strong><span data-i18n="stat.undetected">Undetected</span></div>
+      </div>
+
+      <div class="detail-card" data-reveal>
+        <h3 data-i18n="results.details">Details</h3>
+        <dl class="detail-rows" id="detailRows"></dl>
+      </div>
+
+      <div class="detail-card" data-reveal>
+        <h3 id="enginesTitle">Flagged engines</h3>
+        <ul class="engine-list" id="engineList"></ul>
+      </div>
+
+      <div class="results-actions" data-reveal>
+        <button class="btn btn-ghost" id="downloadBtn" type="button" data-i18n="action.download">Download report</button>
+        <button class="btn btn-primary" id="resetBtn" type="button" data-i18n="action.again">Scan another</button>
+      </div>
+    </section>
+
+    <section class="how" id="how">
+      <header class="section-head" data-reveal>
+        <h2 data-i18n="how.head">How the scan works.</h2>
+        <p data-i18n="how.sub">Noisy Virus checks smart, then loud — the same flow analysts use.</p>
+      </header>
+      <div class="how-grid">
+        <article class="card" data-reveal>
+          <span class="how-num">01</span>
+          <h3 data-i18n="how.c1t">Hash first.</h3>
+          <p data-i18n="how.c1b">Your file is fingerprinted locally with SHA-256. If VirusTotal already knows it, nothing leaves your machine.</p>
+        </article>
+        <article class="card card-tint" data-reveal>
+          <span class="how-num">02</span>
+          <h3 data-i18n="how.c2t">Stealth upload.</h3>
+          <p data-i18n="how.c2b">Unknown files are submitted through a stealth browser session — no account, no API key required.</p>
+        </article>
+        <article class="card card-mono" data-reveal>
+          <span class="how-num">03</span>
+          <h3 data-i18n="how.c3t">Full report.</h3>
+          <p data-i18n="how.c3b">Detections from 70+ engines, file intelligence, and a permanent link you can share with anyone.</p>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <section class="dev-section" id="dev">
+    <p class="dev-heading" data-i18n="footer.dev">Developed by</p>
+    <div class="dev-grid">
+      <div class="dev-card" data-reveal>
+        <span class="dev-avatar-wrap">
+          <span class="dev-avatar-ring" aria-hidden="true"></span>
+          <img class="dev-avatar" src="/dev-avatar.png?v=1" alt="Noisy" width="86" height="86">
+        </span>
+        <div class="dev-info">
+          <strong class="dev-name">Noisy<span class="dev-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></strong>
+          <p class="dev-role" data-i18n="dev.r1">Creator of Noisy Virus</p>
+          <div class="dev-links">
+            <a href="https://t.me/noisy05" target="_blank" rel="noopener noreferrer" aria-label="Telegram @noisy05">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.6c.3-1.3-.9-1.9-2.1-1.4L2.7 10.4c-1.3.5-1.2 2 .1 2.4l4.4 1.4 1.7 5.3c.4 1.1 1.1 1.3 1.9.6l2.5-2.3 4.5 3.3c.8.6 1.9.2 2.1-.9l2-15.6zM8.4 13.5l9.3-5.9c.4-.3.8.3.5.6l-7.6 7-.3 3-1.9-4.7z"/></svg>
+              <span>@noisy05</span>
+            </a>
+            <a href="https://github.com/cokguss" target="_blank" rel="noopener noreferrer" aria-label="GitHub cokguss">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.6.5.5 5.6.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 015.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0023.5 12C23.5 5.6 18.4.5 12 .5z"/></svg>
+              <span>cokguss</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="dev-card" data-reveal>
+        <span class="dev-avatar-wrap">
+          <span class="dev-avatar-ring ring-warm" aria-hidden="true"></span>
+          <img class="dev-avatar" src="/bloodskill.png?v=1" alt="BloodSKill" width="86" height="86">
+        </span>
+        <div class="dev-info">
+          <strong class="dev-name">BloodSKill</strong>
+          <p class="dev-role" data-i18n="dev.r2">Developer of XtremeUbot</p>
+          <div class="dev-links">
+            <a href="https://t.me/bloodskil2" target="_blank" rel="noopener noreferrer" aria-label="Telegram @bloodskil2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.6c.3-1.3-.9-1.9-2.1-1.4L2.7 10.4c-1.3.5-1.2 2 .1 2.4l4.4 1.4 1.7 5.3c.4 1.1 1.1 1.3 1.9.6l2.5-2.3 4.5 3.3c.8.6 1.9.2 2.1-.9l2-15.6zM8.4 13.5l9.3-5.9c.4-.3.8.3.5.6l-7.6 7-.3 3-1.9-4.7z"/></svg>
+              <span>@bloodskil2</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p class="footer-brandline">
+      <svg width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><rect x="2" y="2" width="60" height="60" rx="16" fill="#0b0d16"/><path d="M18 44 L26 20 L32 34 L38 24 L46 44" stroke="#7b96ff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="14" r="4" fill="#ff8c52"/></svg>
+      <span data-i18n="footer.powered">Powered by NoisyVirus</span>
+    </p>
+    <nav class="footer-legal" aria-label="Legal">
+      <a href="/privacy.html" data-i18n="legal.privacy">Privacy Policy</a>
+      <a href="/terms.html" data-i18n="legal.terms">Terms of Service</a>
+    </nav>
+    <p class="footer-note">© 2026 NOISY VIRUS · v42</p>
+  </footer>
+
+  <div class="scene-tooltip" id="sceneTooltip" aria-hidden="true"></div>
+
+  <script src="app.js?v=28" defer></script>
+  <script type="module" src="scene.js?v=8"></script>
+</body>
+</html>

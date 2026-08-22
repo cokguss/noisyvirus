@@ -1,0 +1,14 @@
+# Environment — berisi API key asli, jangan pernah di-commit
+.env
+
+# Dependensi
+node_modules/
+
+# Log
+*.log
+server.log
+server.err.log
+
+# Sistem
+.DS_Store
+Thumbs.db

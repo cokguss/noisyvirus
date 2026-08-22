@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Kebijakan Privasi — Noisy Virus</title>
+  <meta name="description" content="Kebijakan privasi Noisy Virus — bagaimana data Anda diproses saat memindai file dan tautan.">
+  <meta name="theme-color" content="#0a0a0e">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230b0d16'/%3E%3Cpath d='M18 44 L26 20 L32 34 L38 24 L46 44' stroke='%237b96ff' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='14' r='4' fill='%23ff8c52'/%3E%3C/svg%3E">
+  <script>document.documentElement.classList.add('js')</script>
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=42">
+</head>
+<body class="legal-page">
+
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+
+  <div class="bg" aria-hidden="true">
+    <div class="bg-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="orb orb-4"></div>
+    </div>
+    <svg class="bg-grain" xmlns="http://www.w3.org/2000/svg">
+      <filter id="grain">
+        <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="2" stitchTiles="stitch"/>
+        <feColorMatrix type="saturate" values="0"/>
+      </filter>
+      <rect width="100%" height="100%" filter="url(#grain)"/>
+    </svg>
+    <div class="bg-vignette"></div>
+  </div>
+
+  <header class="site-nav legal-nav">
+    <a class="nav-brand" href="/" aria-label="Noisy Virus home">
+      <svg class="logo-mark" width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="2" y="2" width="60" height="60" rx="16" fill="#0b0d16" stroke="rgba(123,150,255,.45)" stroke-width="2"/>
+        <path d="M21 40 L27 22 L33 33 L38 25 L43 38" stroke="#7b96ff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="51" cy="13" r="4" fill="#ff8c52"/>
+      </svg>
+      <span class="brand-text">NOISY<em>VIRUS</em></span>
+    </a>
+    <a class="btn btn-ghost btn-sm" href="/?skipIntro=1">&larr;&nbsp;<span>Kembali ke Beranda</span></a>
+  </header>
+
+  <main class="legal-main">
+    <p class="legal-kicker">NOISY VIRUS — LEGAL</p>
+    <h1>Kebijakan Privasi</h1>
+    <p class="legal-updated">Terakhir diperbarui · 22 Agustus 2026</p>
+
+    <article class="legal-body">
+      <section>
+        <h2>Ringkasan singkat</h2>
+        <p>Noisy Virus adalah alat pemindai tanpa akun. Kami tidak menyimpan database pengguna, tidak memasang pelacak, dan tidak menjual data apa pun. Sebagian besar pemindaian bahkan tidak pernah mengirim file Anda ke mana pun — cukup sidik jarinya.</p>
+      </section>
+
+      <section>
+        <h2>Data yang diproses saat pemindaian</h2>
+        <ul>
+          <li><strong>File yang Anda unggah</strong> dihitung hash SHA-256-nya secara lokal di browser. Jika hash sudah dikenal VirusTotal, file tidak pernah dikirim — hanya hash 64 karakternya.</li>
+          <li><strong>File baru</strong> yang belum pernah dilaporkan akan diunggah sekali ke VirusTotal untuk dipindai oleh puluhan mesin antivirus.</li>
+          <li><strong>Tautan (URL)</strong> yang Anda masukkan diteruskan ke VirusTotal untuk diperiksa reputasinya.</li>
+          <li>Laporan hasil pemindaian disimpan sementara di memori server selama maksimal 10 menit sebagai cache, lalu hilang.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Layanan pihak ketiga</h2>
+        <ul>
+          <li><strong>VirusTotal</strong> (dioperasikan oleh Google LLC) menerima hash, file, atau URL yang Anda pindai. Privasi terkait data tersebut diatur oleh kebijakan privasi VirusTotal.</li>
+          <li><strong>YouTube</strong> memuat pemutar video semat hanya saat Anda mengaktifkan fitur suara. YouTube dapat mencatat interaksi tersebut sesuai kebijakannya sendiri.</li>
+          <li>Font dari Google Fonts dimuat untuk keperluan tampilan.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Penyimpanan lokal di perangkat Anda</h2>
+        <p>Situs ini menyimpan satu preferensi di <strong>localStorage</strong> perangkat Anda: pilihan bahasa (ID/EN). Tidak ada cookie iklan, cookie analitik, atau fingerprinting.</p>
+      </section>
+
+      <section>
+        <h2>Yang tidak kami lakukan</h2>
+        <ul>
+          <li>Tidak ada pendaftaran akun — kami bahkan tidak punya tempat menyimpan identitas Anda.</li>
+          <li>Tidak ada analitik atau pelacakan perilaku.</li>
+          <li>Tidak ada penjualan atau pembagian data kepada pemasar.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Kontak</h2>
+        <p>Pertanyaan seputar privasi dapat dikirim melalui Telegram <a href="https://t.me/noisy05" target="_blank" rel="noopener noreferrer">@noisy05</a>.</p>
+      </section>
+    </article>
+
+  </main>
+
+  <footer class="legal-foot">
+    <span class="footer-note">© 2026 NOISY VIRUS</span>
+    <nav class="footer-legal" aria-label="Legal">
+      <a href="/privacy.html">Kebijakan Privasi</a>
+      <a href="/terms.html">Ketentuan Layanan</a>
+    </nav>
+  </footer>
+
+  <script type="module" src="scene.js?v=8"></script>
+</body>
+</html>
