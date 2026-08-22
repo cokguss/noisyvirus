@@ -1452,9 +1452,48 @@ html.entrance-forced .hero-line > span {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 1rem;
-  padding-top: 5.25rem;
-  padding-top: clamp(5.25rem, 10vh, 6.5rem);
+  padding-top: 1.5rem;
+  padding-top: clamp(1.25rem, 4vh, 2.5rem);
   padding-bottom: clamp(2rem, 8vh, 5rem);
+}
+
+/* sticky bar holds the close button pinned to the card's top-right corner;
+   the negative margin + translate makes the button sit ON the card edge */
+.legal-modal-bar {
+  position: sticky;
+  top: 0.85rem;
+  z-index: 3;
+  display: flex;
+  justify-content: flex-end;
+  max-width: 760px;
+  margin-inline: auto;
+  margin-bottom: -24px;
+  padding-right: 0.35rem;
+  pointer-events: none;
+}
+
+.legal-modal-close {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  background: rgba(10, 11, 18, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  transform: translateY(24px);
+  transition: border-color 0.25s var(--ease), background 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.legal-modal-close:hover {
+  border-color: rgba(123, 150, 255, 0.6);
+  background: rgba(123, 150, 255, 0.16);
 }
 
 .legal-modal-panel {
@@ -1470,35 +1509,6 @@ html.entrance-forced .hero-line > span {
 
 .legal-modal-panel .legal-main {
   margin-top: 0;
-}
-
-.legal-modal-close {
-  position: fixed;
-  top: 1rem;
-  top: clamp(0.9rem, 3vh, 1.75rem);
-  right: 1rem;
-  right: clamp(0.9rem, 3vw, 1.75rem);
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 50%;
-  background: rgba(10, 11, 18, 0.82);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  color: var(--text);
-  cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  transition: border-color 0.25s var(--ease), transform 0.25s var(--ease), background 0.25s var(--ease);
-}
-
-.legal-modal-close:hover {
-  border-color: rgba(123, 150, 255, 0.6);
-  background: rgba(123, 150, 255, 0.14);
-  transform: rotate(90deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
