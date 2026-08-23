@@ -6,7 +6,7 @@
 
 Scan URL · Scan file · Lookup hash · VirusTotal API v3
 
-[![Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare%20Workers-f38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/workers/)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel&logoColor=white)](https://vercel.com)
 [![Vanilla JS](https://img.shields.io/badge/Frontend-Vanilla%20JS%20%2B%20Three.js-f7df1e?logo=javascript&logoColor=black)](#)
 [![License](https://img.shields.io/badge/Penggunaan-pribadi-a855f7)](LICENSE.md)
 
@@ -22,6 +22,7 @@ Scan URL · Scan file · Lookup hash · VirusTotal API v3
 | **Scan file** | Unggah file (maks 32 MB) dan dapatkan laporan deteksi lengkap |
 | **Lookup hash** | Cek MD5 / SHA-1 / SHA-256 langsung tanpa mengunggah apa pun |
 | **Hash-first** | File di-fingerprint SHA-256 di browser — jika sudah dikenal VirusTotal, file tidak pernah dikirim |
+| **Streaming relay** | File baru diunggah lewat relai yang mengalirkan body langsung ke VirusTotal tanpa buffering — lolos dari batas body 4.5 MB khas serverless |
 
 **Fitur umum**
 
@@ -34,92 +35,83 @@ Scan URL · Scan file · Lookup hash · VirusTotal API v3
 
 ## 🚀 Menjalankan Secara Lokal
 
-**Prasyarat:** Node.js 18+ dan akun VirusTotal gratis (untuk API key).
+**Prasyarat:** Node.js 18+ dan akun VirusTotal gratis (untuk API key). Tanpa dependensi npm sama sekali.
 
 ```bash
-# 1. Install dependensi (wrangler)
-npm install
-
-# 2. Siapkan environment lokal
-#    Salin .dev.vars.example menjadi .dev.vars lalu isi:
+# 1. Isi environment (file .env sudah dibaca dev-server; contoh ada di repo)
 #    VT_API_KEY=<kunci-virustotal-anda>
+#    PORT=3000
 
-# 3. Jalankan server dev
-npm start        # atau: npm run dev  (= npx wrangler dev)
+# 2. Jalankan
+npm install     # opsional; hanya membersihkan node_modules lama
+npm start       # atau: npm run dev
 ```
 
-Buka URL yang dicetak wrangler (default **http://localhost:8787**) — selesai.
+Buka **http://localhost:3000** — selesai.
 
 ### Script yang tersedia
 
 | Perintah | Fungsi |
 |----------|--------|
-| `npm start` / `npm run dev` | Menjalankan worker secara lokal (`wrangler dev`) |
-| `npm run deploy` | Deploy ke Cloudflare Workers (`wrangler deploy`) |
+| `npm start` / `npm run dev` | Server dev lokal tanpa dependensi (`node dev-server.mjs`) |
 
 ## 🧠 Cara Kerja
 
 ```
-Browser ──► Cloudflare Worker ──► VirusTotal API v3
-   │               │                   ├── lookup hash/url langsung
-   │               │                   └── upload sekali untuk file baru
-   │               ├── SHA-256 di browser ── file dikenal? tidak pernah diunggah
-   │               ├── Cache in-memory 10 menit + throttle 4 req/menit
+Browser ──► Vercel ──► VirusTotal API v3
+   │             │            ├── /api/check/{hash,url}  : Node Function (JSON kecil)
+   │             │            └── /api/check/file      : Edge Function — stream multipart
+   │             │               langsung ke VT tanpa buffering → bebas batas 4.5 MB
+   │             ├── SHA-256 di browser ── file dikenal? tidak pernah diunggah
+   │             ├── Cache in-memory 10 menit + throttle 4 req/menit
    └── Three.js ── scene 3D: equalizer bars, signal core, satelit orbit, partikel
 ```
 
-**Hash-first:** file dihitung hash SHA-256-nya di **browser** (Web Crypto) → hash dicari dulu lewat `/api/check/hash` (payload beberapa byte) → bila VirusTotal sudah mengenalnya, laporan muncul instan tanpa satu bit file pun meninggalkan perangkat. Hanya file yang benar-benar baru yang diunggah satu kali untuk dianalisis.
+**Alur scan file:** file dihitung hash SHA-256-nya di **browser** (Web Crypto) → hash dicari dulu → bila VirusTotal sudah mengenalnya, laporan muncul instan tanpa satu bit pun meninggalkan perangkat. Bila benar-benar baru, file diunggah **satu kali** melalui Edge Function yang me-*pipe* body multipart apa adanya ke VirusTotal (server tak pernah membaca isi file), lalu frontend mem-polling lookup hash tiap 5 detik sampai laporan analisis muncul.
 
 ## 📁 Struktur Proyek
 
 ```
 noisy-virus/
-├── worker.js               # Entry Cloudflare Worker — /api/check/{url,hash,file}, /api/health
-├── wrangler.jsonc          # Konfigurasi Workers + static assets (./public)
+├── api/
+│   ├── index.js            # Vercel Function JSON: /api/health, /api/check/{url,hash}
+│   └── upload.js           # Edge Function: relai streaming /api/check/file
 ├── lib/
+│   ├── router-core.js      # Router API bersama (dipakai Vercel & Workers)
+│   ├── upload-relay.js     # Pipe multipart → VirusTotal tanpa buffering
 │   ├── vt-api.js           # Client VirusTotal API v3 (fetch native, Web-standard)
 │   └── normalize.js        # Penyeragam respons VT → format laporan tunggal
-├── public/                 # Static assets (disajikan otomatis oleh assets binding)
+├── public/                 # Frontend statis
 │   ├── index.html          # Halaman utama (intro, scanner, hasil)
 │   ├── app.js              # Logika frontend (scan, i18n, intro, audio)
 │   ├── scene.js            # Scene 3D Three.js (deferred boot, low-fps aware)
 │   ├── style.css           # Seluruh gaya (dark theme, responsif)
-│   ├── privacy.html        # Kebijakan Privasi
-│   ├── terms.html          # Ketentuan Layanan
+│   ├── privacy.html, terms.html
 │   └── dev-avatar.png, bloodskill.png
-├── .dev.vars.example       # Template environment lokal (VT_API_KEY)
+├── worker.js               # (Opsional) entry Cloudflare Workers — modul yang sama
+├── wrangler.jsonc          # (Opsional) konfigurasi Workers bila ingin dual-host
+├── vercel.json             # Rewrite /api/* ke functions
+├── dev-server.mjs          # Server dev lokal tanpa dependensi
 └── package.json
 ```
 
-## ☁️ Deploy ke Cloudflare
+## ☁️ Deploy
 
-Aplikasi berjalan sebagai **satu Cloudflare Worker**: frontend statis disajikan dari assets binding, API jalan di edge global. Upload hingga ±100 MB didukung platform (aplikasi membatasi sendiri di 32 MB sesuai kuota analisis VT).
+### Vercel (utama)
 
-### Cara A — via CLI
+1. Push repo ini ke GitHub dan hubungkan di **Vercel → Add New Project** (framework preset: *Other*).
+2. Set Environment Variable `VT_API_KEY` (Production + Preview).
+3. Deploy. Setiap push berikutnya otomatis ter-deploy.
 
-```bash
-npx wrangler login                      # sekali saja, buka browser
-npx wrangler secret put VT_API_KEY      # tempel kunci VirusTotal Anda
-npm run deploy
-```
+Tidak ada build command maupun output directory yang perlu diisi — `public/` disajikan statis oleh Vercel dan `api/*` menjadi Functions sesuai konvensi + rewrite di `vercel.json`.
 
-Worker live di `https://noisy-virus.<subdomain-anda>.workers.dev`.
-
-### Cara B — via Dashboard (auto-deploy tiap push)
-
-1. Push repo ini ke GitHub.
-2. Buka **Cloudflare Dashboard → Workers & Pages → Create** → hubungkan repo GitHub.
-3. Wrangler akan membaca `wrangler.jsonc` secara otomatis — tidak ada build command yang perlu diisi.
-4. Di pengaturan Worker → **Settings → Variables and Secrets**, tambahkan secret `VT_API_KEY`.
-5. Setiap `git push` ke branch utama memicu deploy ulang otomatis.
-
-> Jangan pernah commit `.dev.vars` — file itu sudah masuk `.gitignore`. Kunci produksi hanya disimpan sebagai Secret di dashboard/CLI.
+> Upload besar mengandalkan Edge Function streaming (`api/upload.js`). Bila suatu saat platform berubah perilaku, ganti `runtime: 'edge'` → hapus baris config itu untuk memakai runtime Node dengan Fluid compute (durasi hingga 300 s).
 
 ## ⚠️ Catatan
 
 - Hasil pemindaian bersumber dari mesin antivirus pihak ketiga via VirusTotal dan bukan jaminan mutlak aman/bahaya — selalu verifikasi dengan beberapa sumber untuk keputusan penting.
-- Quota API gratis VirusTotal dibatasi (± 4 permintaan/menit) — worker sudah membungkusnya dengan throttle dan cache internal.
-- Cache hasil bersifat per-isolate (ter-reset saat isolate di-evict); cukup untuk menyerap permintaan berulang dalam sesi hangat.
+- Quota API gratis VirusTotal dibatasi (± 4 permintaan/menit & ±500 unggahan/hari) — server membungkus lookup dengan throttle dan cache internal.
+- Analisis file yang benar-benar baru butuh waktu ±1–3 menit di sisi VirusTotal; frontend otomatis mem-polling sampai laporannya siap.
 
 ---
 

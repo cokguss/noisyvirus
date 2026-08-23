@@ -72,7 +72,8 @@ const I18N = {
     'health.stealth': 'STEALTH MODE',
     'health.nobrowser': 'NO BROWSER',
     'health.offline': 'OFFLINE',
-    'error.fileTooLarge': 'That file is over the 32 MB scan limit — try a smaller sample.'
+    'error.fileTooLarge': 'That file is over the 32 MB scan limit — try a smaller sample.',
+    'error.scanTimeout': 'Uploaded, but VirusTotal is still analyzing this brand-new file. Try again shortly or scan by its hash.'
   },
   id: {
     'intro.kicker': 'NOISY VIRUS HADIRKAN',
@@ -145,7 +146,8 @@ const I18N = {
     'health.stealth': 'MODE STEALTH',
     'health.nobrowser': 'BROWSER TIDAK ADA',
     'health.offline': 'OFFLINE',
-    'error.fileTooLarge': 'File melebihi batas pemindaian 32 MB — gunakan sampel yang lebih kecil.'
+    'error.fileTooLarge': 'File melebihi batas pemindaian 32 MB — gunakan sampel yang lebih kecil.',
+    'error.scanTimeout': 'Terunggah, tetapi VirusTotal masih menganalisis file baru ini. Coba lagi sebentar lagi atau pindai lewat hash-nya.'
   }
 };
 
@@ -815,6 +817,8 @@ dropzone.addEventListener('drop', (e) => {
   }
 });
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function sha256Hex(file) {
   const view = new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()));
   return Array.from(view, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -824,34 +828,51 @@ fileScanBtn.addEventListener('click', async () => {
   if (!selectedFile) return;
   setBusy(true);
   try {
-    // hash first — fingerprint locally so anything VirusTotal already knows
-    // resolves without uploading, which also sidesteps the host's request
-    // body cap (e.g. Vercel's ±4.5 MB) for every known file regardless of size
-    let known = null;
-    if (window.crypto?.subtle) {
+    // hash first — fingerprint locally; VT-known files never leave the device
+    let digest = null;
+    if (window.crypto?.subtle) digest = await sha256Hex(selectedFile);
+
+    if (digest) {
       try {
-        const digest = await sha256Hex(selectedFile);
-        known = await api('/api/check/hash', {
+        const known = await api('/api/check/hash', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ hash: digest })
         });
+        renderResult(known.result);
+        return;
       } catch (err) {
         // unknown to VT -> a real upload is still needed; anything else is a
-        // genuine failure (blocked, engine down) worth surfacing as-is
+        // genuine failure worth surfacing as-is
         if (err.status !== 404) throw err;
       }
     }
 
-    if (known) {
-      renderResult(known.result);
-      return;
-    }
-
+    // brand-new file: upload once through the streaming relay (the server
+    // pipes the body straight into VirusTotal without buffering it, which
+    // is what lets big files through), then poll by hash until the
+    // analysis lands under our digest
     const fd = new FormData();
     fd.append('file', selectedFile);
-    const json = await api('/api/check/file', { method: 'POST', body: fd });
-    renderResult(json.result);
+    await api('/api/check/file', { method: 'POST', body: fd });
+
+    if (!digest) throw new Error(t('error.scanTimeout'));
+
+    for (let i = 0; i < 48; i++) {
+      await sleep(5000);
+      try {
+        const json = await api('/api/check/hash', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ hash: digest })
+        });
+        renderResult(json.result);
+        return;
+      } catch (err) {
+        if (err.status !== 404 && err.status !== 502) throw err;
+      }
+    }
+    throw new Error(t('error.scanTimeout'));
   } catch (err) {
     showError(err.message);
   } finally {

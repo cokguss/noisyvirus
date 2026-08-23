@@ -3,17 +3,12 @@
   "version": "1.0.0",
   "description": "Noisy Virus — scan files & URLs against VirusTotal",
   "type": "module",
-  "main": "worker.js",
+  "main": "dev-server.mjs",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "start": "wrangler dev",
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
-  },
-  "devDependencies": {
-    "wrangler": "^4.0.0"
-  },
-  "allowScripts": {
-    "esbuild@0.28.1": true,
-    "workerd@1.20260820.1": true
+    "start": "node dev-server.mjs",
+    "dev": "node dev-server.mjs"
   }
 }
