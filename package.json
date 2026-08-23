@@ -4,9 +4,6 @@
   "description": "Noisy Virus — scan files & URLs against VirusTotal",
   "type": "module",
   "main": "dev-server.mjs",
-  "engines": {
-    "node": ">=18"
-  },
   "scripts": {
     "start": "node dev-server.mjs",
     "dev": "node dev-server.mjs"
