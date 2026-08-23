@@ -5,6 +5,8 @@
   "outputDirectory": "public",
   "rewrites": [
     { "source": "/api/check/file", "destination": "/api/upload" },
-    { "source": "/api/(.*)", "destination": "/api/index" }
+    { "source": "/api/check/url", "destination": "/api/check-url" },
+    { "source": "/api/check/hash", "destination": "/api/check-hash" },
+    { "source": "/api/health", "destination": "/api/health" }
   ]
 }

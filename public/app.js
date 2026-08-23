@@ -73,7 +73,7 @@ const I18N = {
     'health.nobrowser': 'NO BROWSER',
     'health.offline': 'OFFLINE',
     'error.fileTooLarge': 'That file is over the 32 MB scan limit — try a smaller sample.',
-    'error.scanTimeout': 'Uploaded, but VirusTotal is still analyzing this brand-new file. Try again shortly or scan by its hash.'
+    'error.scanTimeout': 'VirusTotal is still analyzing this brand-new target — try again shortly.'
   },
   id: {
     'intro.kicker': 'NOISY VIRUS HADIRKAN',
@@ -147,7 +147,7 @@ const I18N = {
     'health.nobrowser': 'BROWSER TIDAK ADA',
     'health.offline': 'OFFLINE',
     'error.fileTooLarge': 'File melebihi batas pemindaian 32 MB — gunakan sampel yang lebih kecil.',
-    'error.scanTimeout': 'Terunggah, tetapi VirusTotal masih menganalisis file baru ini. Coba lagi sebentar lagi atau pindai lewat hash-nya.'
+    'error.scanTimeout': 'VirusTotal masih menganalisis target yang benar-benar baru ini — coba lagi sebentar lagi.'
   }
 };
 
@@ -746,11 +746,21 @@ document.getElementById('urlForm').addEventListener('submit', async (e) => {
   if (!value) return;
   setBusy(true);
   try {
-    const json = await api('/api/check/url', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ url: value })
-    });
+    const check = () =>
+      api('/api/check/url', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: value })
+      });
+
+    let json = await check();
+    // brand-new URL: VT is analyzing it server-side — poll until its
+    // report shows up under the same lookup (usually within seconds)
+    for (let i = 0; json.pending && i < 36; i++) {
+      await sleep(5000);
+      json = await check();
+    }
+    if (json.pending) throw new Error(t('error.scanTimeout'));
     renderResult(json.result);
   } catch (err) {
     showError(err.message);

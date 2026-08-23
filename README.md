@@ -73,9 +73,11 @@ Browser ──► Vercel ──► VirusTotal API v3
 
 ```
 noisy-virus/
-├── api/
-│   ├── index.js            # Vercel Function JSON: /api/health, /api/check/{url,hash}
-│   └── upload.js           # Edge Function: relai streaming /api/check/file
+├── api/                    # Empat Vercel Edge Functions (semua respons <25s)
+│   ├── health.js           # GET  /api/health
+│   ├── check-url.js        # POST /api/check/url   (+pending untuk URL baru)
+│   ├── check-hash.js       # POST /api/check/hash  (jadi endpoint polling file baru)
+│   └── upload.js           # POST /api/check/file  — relai streaming ke VT
 ├── lib/
 │   ├── router-core.js      # Router API bersama (dipakai Vercel & Workers)
 │   ├── upload-relay.js     # Pipe multipart → VirusTotal tanpa buffering
