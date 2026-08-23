@@ -3,17 +3,17 @@
   "version": "1.0.0",
   "description": "Noisy Virus — scan files & URLs against VirusTotal",
   "type": "module",
-  "main": "server.js",
+  "main": "worker.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "wrangler dev",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
   },
-  "dependencies": {
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1",
-    "puppeteer": "^25.8.0",
-    "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260820.1": true
   }
 }

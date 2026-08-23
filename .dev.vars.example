@@ -1,0 +1,3 @@
+# Salin file ini menjadi .dev.vars lalu isi kuncinya.
+# .dev.vars dibaca `wrangler dev` secara lokal — jangan pernah di-commit.
+VT_API_KEY=<kunci-virustotal-anda>

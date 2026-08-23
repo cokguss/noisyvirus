@@ -9,6 +9,10 @@ node_modules/
 server.log
 server.err.log
 
+# Wrangler — local state & secrets
+.wrangler/
+.dev.vars
+
 # Sistem
 .DS_Store
 Thumbs.db

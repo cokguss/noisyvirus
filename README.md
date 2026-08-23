@@ -4,9 +4,9 @@
 
 **Pindai file, hash, dan URL melawan 70+ mesin antivirus — sebelum sempat menyentuh perangkat Anda**
 
-Scan URL · Scan file · Lookup hash · Dual engine (API resmi / stealth)
+Scan URL · Scan file · Lookup hash · VirusTotal API v3
 
-[![Node](https://img.shields.io/badge/Node-Express-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare%20Workers-f38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/workers/)
 [![Vanilla JS](https://img.shields.io/badge/Frontend-Vanilla%20JS%20%2B%20Three.js-f7df1e?logo=javascript&logoColor=black)](#)
 [![License](https://img.shields.io/badge/Penggunaan-pribadi-a855f7)](LICENSE.md)
 
@@ -21,8 +21,7 @@ Scan URL · Scan file · Lookup hash · Dual engine (API resmi / stealth)
 | **Scan URL** | Periksa reputasi tautan terhadap puluhan mesin antivirus via VirusTotal |
 | **Scan file** | Unggah file (maks 32 MB) dan dapatkan laporan deteksi lengkap |
 | **Lookup hash** | Cek MD5 / SHA-1 / SHA-256 langsung tanpa mengunggah apa pun |
-| **Hash-first** | File di-fingerprint SHA-256 secara lokal — jika sudah dikenal VirusTotal, file tidak pernah dikirim |
-| **Dual engine** | Pakai VT API resmi bila ada key; tanpa key otomatis beralih ke mode stealth (browser headless) |
+| **Hash-first** | File di-fingerprint SHA-256 di browser — jika sudah dikenal VirusTotal, file tidak pernah dikirim |
 
 **Fitur umum**
 
@@ -35,88 +34,92 @@ Scan URL · Scan file · Lookup hash · Dual engine (API resmi / stealth)
 
 ## 🚀 Menjalankan Secara Lokal
 
-**Prasyarat:** Node.js 18+ (opsional: Chrome/Edge untuk mode stealth)
+**Prasyarat:** Node.js 18+ dan akun VirusTotal gratis (untuk API key).
 
 ```bash
-# 1. Install dependensi
+# 1. Install dependensi (wrangler)
 npm install
 
-# 2. Siapkan environment
-#    Salin .env.example menjadi .env lalu isi:
-#    VT_API_KEY=<kunci-virustotal-anda>   # opsional — tanpa key dipakai mode stealth
-#    PORT=3000
-#    CHROME_PATH=                          # opsional, jalur chrome.exe khusus
+# 2. Siapkan environment lokal
+#    Salin .dev.vars.example menjadi .dev.vars lalu isi:
+#    VT_API_KEY=<kunci-virustotal-anda>
 
-# 3. Jalankan server
-npm start        # atau: npm run dev
+# 3. Jalankan server dev
+npm start        # atau: npm run dev  (= npx wrangler dev)
 ```
 
-Buka **http://localhost:3000** — selesai.
+Buka URL yang dicetak wrangler (default **http://localhost:8787**) — selesai.
 
 ### Script yang tersedia
 
 | Perintah | Fungsi |
 |----------|--------|
-| `npm start` | Menjalankan server (`node server.js`) |
-| `npm run dev` | Sama dengan `start` |
+| `npm start` / `npm run dev` | Menjalankan worker secara lokal (`wrangler dev`) |
+| `npm run deploy` | Deploy ke Cloudflare Workers (`wrangler deploy`) |
 
 ## 🧠 Cara Kerja
 
 ```
-Browser ──► Express (server.js) ──► VirusTotal
-   │               │                   ├── API v3 resmi  : bila VT_API_KEY tersedia
-   │               │                   └── Mode stealth  : Puppeteer + plugin stealth
-   │               │                                      (tanpa key, menyadap respons GUI)
-   │               ├── SHA-256 lokal ── file dikenal? tidak pernah diunggah
+Browser ──► Cloudflare Worker ──► VirusTotal API v3
+   │               │                   ├── lookup hash/url langsung
+   │               │                   └── upload sekali untuk file baru
+   │               ├── SHA-256 di browser ── file dikenal? tidak pernah diunggah
    │               ├── Cache in-memory 10 menit + throttle 4 req/menit
    └── Three.js ── scene 3D: equalizer bars, signal core, satelit orbit, partikel
 ```
 
-**Kenapa dua engine?** Mode API memberi kecepatan dan kuota resmi. Mode stealth hadir untuk tetap bisa memindai tanpa kunci API — membuka GUI VirusTotal lewat browser headless yang menyamar (puppeteer-extra-plugin-stealth) lalu membaca respons jaringannya, sehingga tidak perlu akun maupun key. Pemilihan engine otomatis saat server boot.
-
-**Alur scan file:** file dihitung hash SHA-256-nya di memori server → hash dicari dulu di VirusTotal → bila sudah ada laporannya, file asli tidak pernah meninggalkan mesin pengguna; bila belum, barulah file diunggah sekali untuk dipindai.
+**Hash-first:** file dihitung hash SHA-256-nya di **browser** (Web Crypto) → hash dicari dulu lewat `/api/check/hash` (payload beberapa byte) → bila VirusTotal sudah mengenalnya, laporan muncul instan tanpa satu bit file pun meninggalkan perangkat. Hanya file yang benar-benar baru yang diunggah satu kali untuk dianalisis.
 
 ## 📁 Struktur Proyek
 
 ```
 noisy-virus/
-├── server.js               # Server Express + /api/check/{url,hash,file}, /api/health
+├── worker.js               # Entry Cloudflare Worker — /api/check/{url,hash,file}, /api/health
+├── wrangler.jsonc          # Konfigurasi Workers + static assets (./public)
 ├── lib/
-│   ├── vt-api.js           # Client VirusTotal API v3 (fetch native)
-│   ├── vt-scraper.js       # Mode stealth (puppeteer-extra + stealth plugin)
+│   ├── vt-api.js           # Client VirusTotal API v3 (fetch native, Web-standard)
 │   └── normalize.js        # Penyeragam respons VT → format laporan tunggal
-├── public/
+├── public/                 # Static assets (disajikan otomatis oleh assets binding)
 │   ├── index.html          # Halaman utama (intro, scanner, hasil)
 │   ├── app.js              # Logika frontend (scan, i18n, intro, audio)
 │   ├── scene.js            # Scene 3D Three.js (deferred boot, low-fps aware)
-│   ├── style.css           # Seluruh gaya (dark theme, responsif, fallback engine lama)
+│   ├── style.css           # Seluruh gaya (dark theme, responsif)
 │   ├── privacy.html        # Kebijakan Privasi
 │   ├── terms.html          # Ketentuan Layanan
 │   └── dev-avatar.png, bloodskill.png
-├── .env.example            # Template environment
+├── .dev.vars.example       # Template environment lokal (VT_API_KEY)
 └── package.json
 ```
 
-## ☁️ Deploy
+## ☁️ Deploy ke Cloudflare
 
-Aplikasi ini adalah server Node tunggal yang menyajikan frontend statis sekaligus API proxy.
+Aplikasi berjalan sebagai **satu Cloudflare Worker**: frontend statis disajikan dari assets binding, API jalan di edge global. Upload hingga ±100 MB didukung platform (aplikasi membatasi sendiri di 32 MB sesuai kuota analisis VT).
 
-| Bagian | Hosting | Platform yang cocok |
-|--------|---------|---------------------|
-| Server + frontend | Node.js runtime | Render, Railway, Fly.io, VPS |
+### Cara A — via CLI
 
-**Langkah deploy:**
+```bash
+npx wrangler login                      # sekali saja, buka browser
+npx wrangler secret put VT_API_KEY      # tempel kunci VirusTotal Anda
+npm run deploy
+```
 
-1. Set environment variable `VT_API_KEY` (dan `PORT` bila disediakan platform).
-2. Deploy sebagai layanan Node dengan perintah start `node server.js`.
+Worker live di `https://noisy-virus.<subdomain-anda>.workers.dev`.
 
-> Mode stealth membutuhkan Chrome/Edge di host — di platform serverless biasanya tidak tersedia, jadi setel `VT_API_KEY` untuk pengalaman paling stabil. Jangan meng-commit `.env` — atur variabel melalui dashboard Environment Variables.
+### Cara B — via Dashboard (auto-deploy tiap push)
+
+1. Push repo ini ke GitHub.
+2. Buka **Cloudflare Dashboard → Workers & Pages → Create** → hubungkan repo GitHub.
+3. Wrangler akan membaca `wrangler.jsonc` secara otomatis — tidak ada build command yang perlu diisi.
+4. Di pengaturan Worker → **Settings → Variables and Secrets**, tambahkan secret `VT_API_KEY`.
+5. Setiap `git push` ke branch utama memicu deploy ulang otomatis.
+
+> Jangan pernah commit `.dev.vars` — file itu sudah masuk `.gitignore`. Kunci produksi hanya disimpan sebagai Secret di dashboard/CLI.
 
 ## ⚠️ Catatan
 
 - Hasil pemindaian bersumber dari mesin antivirus pihak ketiga via VirusTotal dan bukan jaminan mutlak aman/bahaya — selalu verifikasi dengan beberapa sumber untuk keputusan penting.
-- Mode stealth bergantung pada struktur GUI VirusTotal yang dapat berubah sewaktu-waktu; mode API resmi lebih tahan lama.
-- Quota API gratis VirusTotal dibatasi (± 4 permintaan/menit) — server sudah membungkusnya dengan throttle dan cache internal.
+- Quota API gratis VirusTotal dibatasi (± 4 permintaan/menit) — worker sudah membungkusnya dengan throttle dan cache internal.
+- Cache hasil bersifat per-isolate (ter-reset saat isolate di-evict); cukup untuk menyerap permintaan berulang dalam sesi hangat.
 
 ---
 

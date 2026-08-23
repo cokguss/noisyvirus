@@ -57,8 +57,8 @@ const I18N = {
     'how.sub': 'Noisy Virus checks smart, then loud — the same flow analysts use.',
     'how.c1t': 'Hash first.',
     'how.c1b': 'Your file is fingerprinted locally with SHA-256. If VirusTotal already knows it, nothing leaves your machine.',
-    'how.c2t': 'Stealth upload.',
-    'how.c2b': 'Unknown files are submitted through a stealth browser session — no account, no API key required.',
+    'how.c2t': 'Upload once.',
+    'how.c2b': 'Brand-new files are uploaded a single time for analysis — everything else resolves privately through its hash.',
     'how.c3t': 'Full report.',
     'how.c3b': 'Detections from 70+ engines, file intelligence, and a permanent link you can share with anyone.',
     'footer.powered': 'Powered by NoisyVirus',
@@ -72,7 +72,7 @@ const I18N = {
     'health.stealth': 'STEALTH MODE',
     'health.nobrowser': 'NO BROWSER',
     'health.offline': 'OFFLINE',
-    'error.uploadLimit': 'Too large to upload here (host cap ≈4.5 MB). Files VirusTotal already knows still scan instantly via their hash — brand-new ones must go through virustotal.com.'
+    'error.fileTooLarge': 'That file is over the 32 MB scan limit — try a smaller sample.'
   },
   id: {
     'intro.kicker': 'NOISY VIRUS HADIRKAN',
@@ -130,8 +130,8 @@ const I18N = {
     'how.sub': 'Noisy Virus memeriksa dengan cerdas, lalu keras — alur yang sama dipakai para analis.',
     'how.c1t': 'Hash dulu.',
     'how.c1b': 'File Anda di-fingerprint secara lokal dengan SHA-256. Jika VirusTotal sudah mengenalnya, tidak ada yang dikirim dari mesin Anda.',
-    'how.c2t': 'Upload stealth.',
-    'how.c2b': 'File yang belum dikenal dikirim lewat sesi browser stealth — tanpa akun, tanpa API key.',
+    'how.c2t': 'Upload sekali.',
+    'how.c2b': 'File yang benar-benar baru diunggah satu kali untuk dianalisis — sisanya selesai secara privat lewat hash-nya.',
     'how.c3t': 'Laporan lengkap.',
     'how.c3b': 'Deteksi dari 70+ engine, intelijen file, dan tautan permanen yang bisa dibagikan.',
     'footer.powered': 'Didukung oleh NoisyVirus',
@@ -145,7 +145,7 @@ const I18N = {
     'health.stealth': 'MODE STEALTH',
     'health.nobrowser': 'BROWSER TIDAK ADA',
     'health.offline': 'OFFLINE',
-    'error.uploadLimit': 'Terlalu besar untuk diunggah di sini (batas host ≈4,5 MB). File yang sudah dikenal VirusTotal tetap terpindai instan lewat hash — file yang benar-benar baru harus lewat virustotal.com.'
+    'error.fileTooLarge': 'File melebihi batas pemindaian 32 MB — gunakan sampel yang lebih kecil.'
   }
 };
 
@@ -580,10 +580,9 @@ async function api(path, options) {
     json = await res.json();
   } catch {}
   if (!json?.ok) {
-    // non-JSON bodies come from edge proxies (e.g. the host's request-size
-    // cap rejecting an upload before it reaches the server)
+    const tooLarge = json?.code === 'FILE_TOO_LARGE' || res.status === 413;
     const err = new Error(
-      res.status === 413 ? t('error.uploadLimit') : json?.error || `Server error (HTTP ${res.status}).`
+      tooLarge ? t('error.fileTooLarge') : json?.error || `Server error (HTTP ${res.status}).`
     );
     err.status = res.status;
     err.code = json?.code || null;
