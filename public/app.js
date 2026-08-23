@@ -71,7 +71,8 @@ const I18N = {
     'health.api': 'API MODE',
     'health.stealth': 'STEALTH MODE',
     'health.nobrowser': 'NO BROWSER',
-    'health.offline': 'OFFLINE'
+    'health.offline': 'OFFLINE',
+    'error.uploadLimit': 'Too large to upload here (host cap ≈4.5 MB). Files VirusTotal already knows still scan instantly via their hash — brand-new ones must go through virustotal.com.'
   },
   id: {
     'intro.kicker': 'NOISY VIRUS HADIRKAN',
@@ -143,7 +144,8 @@ const I18N = {
     'health.api': 'MODE API',
     'health.stealth': 'MODE STEALTH',
     'health.nobrowser': 'BROWSER TIDAK ADA',
-    'health.offline': 'OFFLINE'
+    'health.offline': 'OFFLINE',
+    'error.uploadLimit': 'Terlalu besar untuk diunggah di sini (batas host ≈4,5 MB). File yang sudah dikenal VirusTotal tetap terpindai instan lewat hash — file yang benar-benar baru harus lewat virustotal.com.'
   }
 };
 
@@ -573,13 +575,20 @@ function showError(message) {
 
 async function api(path, options) {
   const res = await fetch(path, options);
-  let json;
+  let json = null;
   try {
     json = await res.json();
-  } catch {
-    throw new Error(`Server error (HTTP ${res.status}).`);
+  } catch {}
+  if (!json?.ok) {
+    // non-JSON bodies come from edge proxies (e.g. the host's request-size
+    // cap rejecting an upload before it reaches the server)
+    const err = new Error(
+      res.status === 413 ? t('error.uploadLimit') : json?.error || `Server error (HTTP ${res.status}).`
+    );
+    err.status = res.status;
+    err.code = json?.code || null;
+    throw err;
   }
-  if (!json.ok) throw new Error(json.error || `Request failed (HTTP ${res.status}).`);
   return json;
 }
 
@@ -807,10 +816,39 @@ dropzone.addEventListener('drop', (e) => {
   }
 });
 
+async function sha256Hex(file) {
+  const view = new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()));
+  return Array.from(view, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 fileScanBtn.addEventListener('click', async () => {
   if (!selectedFile) return;
   setBusy(true);
   try {
+    // hash first — fingerprint locally so anything VirusTotal already knows
+    // resolves without uploading, which also sidesteps the host's request
+    // body cap (e.g. Vercel's ±4.5 MB) for every known file regardless of size
+    let known = null;
+    if (window.crypto?.subtle) {
+      try {
+        const digest = await sha256Hex(selectedFile);
+        known = await api('/api/check/hash', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ hash: digest })
+        });
+      } catch (err) {
+        // unknown to VT -> a real upload is still needed; anything else is a
+        // genuine failure (blocked, engine down) worth surfacing as-is
+        if (err.status !== 404) throw err;
+      }
+    }
+
+    if (known) {
+      renderResult(known.result);
+      return;
+    }
+
     const fd = new FormData();
     fd.append('file', selectedFile);
     const json = await api('/api/check/file', { method: 'POST', body: fd });

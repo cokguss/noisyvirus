@@ -60,11 +60,20 @@ function sha256(buf) {
 const HASH_RE = /^[a-fA-F0-9]{32}$|^[a-fA-F0-9]{40}$|^[a-fA-F0-9]{64}$/;
 
 async function engineLookupHash(hash) {
-  if (engine === 'official') {
-    await throttle.acquire();
-    return { ok: true, json: await official.lookupHash(hash) };
+  try {
+    if (engine === 'official') {
+      await throttle.acquire();
+      return { ok: true, json: await official.lookupHash(hash) };
+    }
+    return scrapeHash(hash);
+  } catch (e) {
+    // normalize "VT doesn't know this target yet" across both engines so
+    // callers can branch on .notFound instead of parsing error messages
+    if (e.status === 404) {
+      return { ok: false, notFound: true, error: 'Not found on VirusTotal. It has never been submitted before.' };
+    }
+    throw e;
   }
-  return scrapeHash(hash);
 }
 
 async function engineLookupUrl(url) {
@@ -152,7 +161,7 @@ app.post('/api/check/hash', async (req, res) => {
 
   try {
     const out = await engineLookupHash(hash);
-    if (!out.ok) return res.status(404).json({ ok: false, error: out.error });
+    if (!out.ok) return res.status(404).json({ ok: false, code: 'NOT_FOUND', error: out.error });
     const result = normalizeReport(out.json, { type: 'file', target: hash });
     cacheSet(key, result);
     res.json({ ok: true, result });
@@ -186,6 +195,20 @@ app.post('/api/check/file', upload.single('file'), async (req, res) => {
   } catch (e) {
     res.status(502).json({ ok: false, error: e.message });
   }
+});
+
+// multer (and express.json) reject oversized bodies with their own error
+// objects; answer in JSON so the frontend shows a friendly message instead
+// of an HTML error page it can't parse
+app.use((err, _req, res, _next) => {
+  const tooLarge =
+    (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') ||
+    err.type === 'entity.too.large';
+  if (tooLarge) {
+    return res.status(413).json({ ok: false, code: 'FILE_TOO_LARGE', error: 'File exceeds the 32 MB limit.' });
+  }
+  console.error(err);
+  res.status(500).json({ ok: false, error: err.message || 'Unexpected server error.' });
 });
 
 const PORT = Number(process.env.PORT) || 3000;
